@@ -72,4 +72,3 @@ class Appointment(
 }
 
 lateinit var connection: Connection
-// lateinit var account: Account

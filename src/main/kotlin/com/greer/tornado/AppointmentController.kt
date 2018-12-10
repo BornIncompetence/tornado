@@ -29,7 +29,17 @@ class AppointmentController : Controller() {
             val id = aptResult.getInt("appointment_id")
             val reminder = aptResult.getInt("reminder")
 
-            appointments.add(Appointment(title, LocalDate.parse(start.first()), start.last(), LocalDate.parse(end.first()), end.last(), id, reminder))
+            appointments.add(
+                Appointment(
+                    title,
+                    LocalDate.parse(start.first()),
+                    start.last(),
+                    LocalDate.parse(end.first()),
+                    end.last(),
+                    id,
+                    reminder
+                )
+            )
         }
     }
 

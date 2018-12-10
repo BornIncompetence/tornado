@@ -20,21 +20,15 @@ class ImportController : Controller() {
                 throw ProjectException()
             }
 
-            //val formatAMPM = SimpleDateFormat("hh:mm:ss aa")
-            //val format24 = SimpleDateFormat("HH:mm:ss")
             val start = tokens[1].split(" ")
             val end = tokens[2].split(" ")
-            //val startTime = format24.format(formatAMPM.parse(start[1] + start[2]))
-            //val endTime = format24.format(formatAMPM.parse(end[1] + end[2]))
 
             appointments.add(
                 Appointment(
                     tokens[0],
                     LocalDate.parse(start[0]),
-                    //startTime,
                     start[1],
                     LocalDate.parse(end[0]),
-                    //endTime,
                     end[1],
                     tokens[3].toInt()
                 )

@@ -59,7 +59,14 @@ object SQL {
         return "UPDATE Users SET phone = '$phone' WHERE user_id = $id;"
     }
 
-    fun createAppointment(name: String, startDate: String, endDate: String, userID: Int, appID: Int, reminder: Int?): String {
+    fun createAppointment(
+        name: String,
+        startDate: String,
+        endDate: String,
+        userID: Int,
+        appID: Int,
+        reminder: Int?
+    ): String {
         return "INSERT INTO scheduler.appointments(appointment_id, user_id , title, start_date, end_date, reminder) VALUES(\n" +
                 "'$appID', '$userID', '$name' , '$startDate', '$endDate', ${reminder ?: "NULL"}) "
     }
@@ -91,7 +98,7 @@ object SQL {
         return "DELETE FROM Appointments WHERE appointment_id = $appID;"
     }
 
-    fun checkForExistingAppt(appID: Int): String {
+    fun checkForExistingApt(appID: Int): String {
         return "SELECT COUNT(*) FROM Appointments WHERE appointment_id = $appID;"
     }
 }

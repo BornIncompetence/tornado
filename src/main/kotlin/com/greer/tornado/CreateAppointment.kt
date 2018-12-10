@@ -95,7 +95,7 @@ class CreateAppointment : View() {
         } catch (e: Exception) {
             e.printStackTrace()
             "FATAL ERROR: Hash collision detected: You cannot have duplicate tasks" to false
-        }  catch (e: MysqlDataTruncation) {
+        } catch (e: MysqlDataTruncation) {
             "Wrong format for date-time entry" to false
         }
     }

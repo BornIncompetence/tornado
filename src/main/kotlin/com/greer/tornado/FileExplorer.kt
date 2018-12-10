@@ -1,10 +1,7 @@
 package com.greer.tornado
 
-import javafx.beans.property.Property
 import javafx.beans.property.SimpleBooleanProperty
 import javafx.geometry.Pos
-import javafx.scene.control.CheckBox
-import javafx.scene.control.cell.CheckBoxTableCell
 import tornadofx.*
 import java.io.File
 import kotlin.random.Random
@@ -14,7 +11,6 @@ class FileExplorer : View("Import Screen") {
 
     private val ctrlAccount: AccountController by inject()
     private val ctrlImport: ImportController by inject()
-    private val importModel = AppointmentModel(Appointment())
     private val isOverwrite = SimpleBooleanProperty()
 
     override val root = borderpane {
@@ -61,7 +57,7 @@ class FileExplorer : View("Import Screen") {
 
         ctrlImport.appointments.forEach {
             val idStatement = connection.createStatement()
-            val idResult = idStatement.executeQuery(SQL.checkForExistingAppt(it.id))
+            val idResult = idStatement.executeQuery(SQL.checkForExistingApt(it.id))
 
             // Skip over appointment is ID already exists
             if (!idResult.next()) {
@@ -90,7 +86,7 @@ class FileExplorer : View("Import Screen") {
 
         ctrlImport.appointments.forEach {
             val idStatement = connection.createStatement()
-            val idResult = idStatement.executeQuery(SQL.checkForExistingAppt(it.id))
+            val idResult = idStatement.executeQuery(SQL.checkForExistingApt(it.id))
 
             // Modify if the ID already exists, else create a new one
             if (idResult.next()) {
