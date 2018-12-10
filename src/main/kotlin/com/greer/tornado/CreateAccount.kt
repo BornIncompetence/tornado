@@ -11,6 +11,8 @@ class CreateAccount : View("Create Account") {
     private val retypePassword = SimpleStringProperty("")
 
     private val regex = Regex("""\w+@\w+.\w+""")
+    private val ctrlAppointment: AppointmentController by inject()
+    private val ctrlAccount: AccountController by inject()
 
     override val root = vbox {
         paddingAll = 20
@@ -22,7 +24,7 @@ class CreateAccount : View("Create Account") {
             field("Retype Password").passwordfield(retypePassword)
         }
         hbox {
-            alignment = Pos.CENTER
+            alignment = Pos.CENTER_RIGHT
             spacing = 20.0
 
             button("Register").action {
@@ -32,7 +34,7 @@ class CreateAccount : View("Create Account") {
                     .openModal(resizable = false)
 
                 if (result.second) {
-                    //TODO: Update appointments
+                    ctrlAppointment.updateComboBox()
                     close()
                 }
             }
@@ -79,8 +81,8 @@ class CreateAccount : View("Create Account") {
         val successStatement = connection.createStatement()
         val newAccount = Account(email.value, username.value, password.value, null, maxID + 1)
         try {
-            successStatement.executeUpdate(SQL.createAccount(account))
-            account = newAccount
+            successStatement.executeUpdate(SQL.createAccount(newAccount))
+            ctrlAccount.account = newAccount
         } catch (e: Exception) {
             e.printStackTrace()
             return "FATAL ERROR: Could not register user" to false

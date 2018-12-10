@@ -9,6 +9,8 @@ class ChangePassword : View("Change Password") {
     private val newPassword = SimpleStringProperty("")
     private val retypePassword = SimpleStringProperty("")
 
+    private val ctrlAccount: AccountController by inject()
+
     override val root = vbox {
         paddingAll = 20
 
@@ -44,24 +46,24 @@ class ChangePassword : View("Change Password") {
         val successStatement = connection.createStatement()
 
         val result = passwordStatement
-            .executeQuery(SQL.getMatchingRow(account.username, password.value))
+            .executeQuery(SQL.getMatchingRow(ctrlAccount.account.username, password.value))
 
         when {
             newPassword.value != retypePassword.value -> {
                 return "New passwords do not match" to false
             }
-            account.username == "guest" -> {
+            ctrlAccount.account.username == "guest" -> {
                 return "Access denied for guest account" to false
             }
             result.next() -> {
                 successStatement.executeUpdate(
                     SQL.changePassword(
-                        account.username,
-                        newPassword.value
+                        ctrlAccount.account.password,
+                        ctrlAccount.account.id
                     )
                 )
 
-                account.password = newPassword.value
+                ctrlAccount.account.password = newPassword.value
                 return "Successfully changed password" to true
             }
             else -> {

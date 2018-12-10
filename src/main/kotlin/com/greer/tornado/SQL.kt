@@ -39,33 +39,33 @@ object SQL {
                 "'${account.username}', " +
                 "'${account.password}', " +
                 "'${account.email}', " +
-                "${if (account.phone == null) "NULL" else account.phone}" +
+                (if (account.phone == null) "NULL" else "'${account.phone}'") +
                 ");"
     }
 
-    fun changeUsername(old: String, new: String): String {
-        return "UPDATE Users SET username = '$new' WHERE username = '$old';"
+    fun changeUsername(user: String, id: Int): String {
+        return "UPDATE Users SET username = '$user' WHERE user_id = $id;"
     }
 
-    fun changePassword(user: String, pass: String): String {
-        return "UPDATE Users SET password = '$pass' WHERE username = '$user';"
+    fun changePassword(pass: String, id: Int): String {
+        return "UPDATE Users SET password = '$pass' WHERE user_id = $id;"
     }
 
-    fun changeEmail(name: String, address: String): String {
-        return "UPDATE Users SET email = '$address' WHERE username = '$name';"
+    fun changeEmail(email: String, id: Int): String {
+        return "UPDATE Users SET email = '$email' WHERE user_id = $id;"
     }
 
-    fun changePhoneNumber(name: String, number: String): String {
-        return "UPDATE Users SET phone = '$number' WHERE username = '$name';"
+    fun changePhoneNumber(phone: String, id: Int): String {
+        return "UPDATE Users SET phone = '$phone' WHERE user_id = $id;"
     }
 
-    fun createAppointment(name: String, startDate: String, endDate: String, userID: Int, appID: Int): String {
-        return "INSERT INTO scheduler.appointments(appointment_id, user_id , title, start_date, end_date) VALUES(\n" +
-                "'$appID', '$userID', '$name' , '$startDate', '$endDate') "
+    fun createAppointment(name: String, startDate: String, endDate: String, userID: Int, appID: Int, reminder: Int?): String {
+        return "INSERT INTO scheduler.appointments(appointment_id, user_id , title, start_date, end_date, reminder) VALUES(\n" +
+                "'$appID', '$userID', '$name' , '$startDate', '$endDate', ${reminder ?: "NULL"}) "
     }
 
     fun getAppointments(username: String): String {
-        return "SELECT a.title, a.start_date, a.end_date, a.appointment_id " +
+        return "SELECT a.title, a.start_date, a.end_date, a.appointment_id, a.reminder " +
                 "FROM Appointments a " +
                 "INNER JOIN Users u ON a.user_id = u.user_id " +
                 "WHERE username LIKE '$username';"
@@ -81,6 +81,10 @@ object SQL {
 
     fun changeEnd(endDate: String, appID: Int): String {
         return "UPDATE Appointments SET end_date = '$endDate' WHERE appointment_id = $appID;"
+    }
+
+    fun changeReminder(reminder: Int?, appID: Int): String {
+        return "UPDATE Appointments SET reminder = ${reminder ?: "NULL"} WHERE appointment_id = $appID;"
     }
 
     fun removeAppointment(appID: Int): String {

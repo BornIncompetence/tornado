@@ -1,10 +1,15 @@
 package com.greer.tornado
 
+import javafx.geometry.Pos
 import javafx.stage.FileChooser
 import tornadofx.*
 import java.io.File
 
 class Welcome : View("Welcome") {
+    private val ctrlAccount: AccountController by inject()
+    private var accountModel = AccountModel(ctrlAccount.account)
+    private val ctrlImport: ImportController by inject()
+
     override val root = borderpane {
         top = menubar {
             useMaxWidth = true
@@ -40,29 +45,72 @@ class Welcome : View("Welcome") {
                     }
                 }
                 item("Import schedule").action {
-                    val result = try {
-                        val file = open()
+                    var file: File? = null
+                    val result: Pair<String, Boolean> = try {
+                        file = open()
                         if (file != null) {
-                            val appointments = FileExplorer.open(file)
-                            FileExplorer.overwrite(appointments)
-                            "Appointments updated!"
+                            try {
+                                ctrlImport.read(file)
+                                "" to true
+                            } catch (e: ImportController.ProjectException) {
+                                find<Popup>(mapOf(Popup::message to e.message))
+                                    .openModal(resizable = false)
+                                "There was an error opening the csv file, make sure it's a valid database file." to false
+                            }
                         } else {
-                            "File not found!"
+                            "No file was selected." to false
                         }
                     } catch (e: Exception) {
                         e.printStackTrace()
-                        "There was an error opening the csv file, make sure it's a valid database file."
+                        "FATAL ERROR: Something went wrong." to false
                     }
 
-                    find<Popup>(mapOf(Popup::message to result))
-                        .openModal(resizable = false)
+                    if (result.second) {
+                        find<FileExplorer>(
+                            mapOf(
+                                FileExplorer::file to file
+                            )
+                        ).openModal()
+                    } else if (result.first != "No file was selected") {
+                        find<Popup>(mapOf(Popup::message to result.first))
+                            .openModal(resizable = false)
+                    }
+
                 }
-                item("Export schedule")
+                item("Export schedule").action {
+                    val file: File?
+                    val result: Pair<String, Boolean> = try {
+                        file = save()
+                        if (file != null) {
+                            try {
+                                export(file)
+                                "" to true
+                            } catch (e: ImportController.ProjectException) {
+                                find<Popup>(mapOf(Popup::message to e.message))
+                                    .openModal(resizable = false)
+                                "There was an error opening the csv file, make sure it's a valid database file." to false
+                            }
+                        } else {
+                            "No file was selected." to false
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        "FATAL ERROR: Something went wrong." to false
+                    }
+
+                    if (result.second) {
+
+                    }
+                }
             }
             menu("Help")
         }
-        center = label("Logged in as username") {
+        center = hbox {
             paddingAll = 20.0
+            alignment = Pos.CENTER
+
+            label("Logged in as ")
+            label(accountModel.username)
         }
     }
 
@@ -71,7 +119,39 @@ class Welcome : View("Welcome") {
         fileChooser.extensionFilters.add(
             FileChooser.ExtensionFilter("CSV file(*.csv)", "*.csv")
         )
+        fileChooser.initialDirectory = File(System.getProperty("user.home"))
+        fileChooser.initialFileName = "test.csv"
 
         return fileChooser.showOpenDialog(null)
+    }
+
+    private fun save(): File? {
+        val fileChooser = FileChooser()
+        fileChooser.extensionFilters.add(
+            FileChooser.ExtensionFilter("CSV file(*.csv)", "*.csv")
+        )
+        fileChooser.initialDirectory = File(System.getProperty("user.home"))
+        fileChooser.initialFileName = "test.csv"
+
+        return fileChooser.showSaveDialog(null)
+    }
+
+    private fun export(file: File) {
+        try {
+            val exportStatement = connection.createStatement()
+            val exportResult = exportStatement.executeQuery(SQL.getAppointments(ctrlAccount.account.username))
+            file.printWriter().use { out ->
+                while (exportResult.next()) {
+                    val title = exportResult.getString("title")
+                    val start = exportResult.getString("start_date")
+                    val end = exportResult.getString("end_date")
+                    val id = exportResult.getString("appointment_id")
+
+                    out.println("$title,$start,$end,$id")
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 }

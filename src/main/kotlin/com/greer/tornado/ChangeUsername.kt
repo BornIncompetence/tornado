@@ -1,16 +1,16 @@
 package com.greer.tornado
 
-import javafx.beans.property.SimpleStringProperty
 import javafx.geometry.Pos
 import tornadofx.*
 
 class ChangeUsername : View("Change Username") {
-    private val username = SimpleStringProperty("")
+    private val ctrlAccount: AccountController by inject()
+    private var accountModel = AccountModel(ctrlAccount.account)
 
     override val root = vbox {
         paddingAll = 20
 
-        form().fieldset("Change Username").field("Username").textfield(username)
+        form().fieldset("Change Username").field("Username").textfield(accountModel.username)
         hbox {
             alignment = Pos.CENTER
             spacing = 20.0
@@ -22,6 +22,7 @@ class ChangeUsername : View("Change Username") {
                     .openModal(resizable = false)
 
                 if (result.second) {
+                    accountModel.commit()
                     close()
                 }
             }
@@ -34,7 +35,7 @@ class ChangeUsername : View("Change Username") {
     private fun update(): Pair<String, Boolean> {
         val usernameStatement = connection.createStatement()
         val usernameResult = usernameStatement
-            .executeQuery(SQL.checkForExistingUsername(username.value))
+            .executeQuery(SQL.checkForExistingUsername(accountModel.username.value))
 
         usernameResult.next()
         val usernameCount = usernameResult.getInt(1)
@@ -43,7 +44,7 @@ class ChangeUsername : View("Change Username") {
             return "Username taken" to false
         }
 
-        if (account.username == "guest") {
+        if (accountModel.username.value == "guest") {
             return "Access denied for guest account" to false
         }
 
@@ -51,8 +52,8 @@ class ChangeUsername : View("Change Username") {
         try {
             successStatement.executeUpdate(
                 SQL.changeUsername(
-                    account.username,
-                    username.value
+                    accountModel.username.value,
+                    accountModel.id.value.toInt()
                 )
             )
         } catch (e: Exception) {

@@ -1,25 +1,51 @@
 package com.greer.tornado
 
+import com.mysql.cj.jdbc.exceptions.MysqlDataTruncation
 import javafx.geometry.Pos
 import tornadofx.*
 
 class ChangeCancelAppointment : Fragment() {
-    private val ctrl: ChooseAppointment by inject()
-    private var appointmentModel = AppointmentModel(ctrl.appointments.first())
+    private val ctrlAppointment: AppointmentController by inject()
+    private var appointmentModel = AppointmentModel(ctrlAppointment.appointments.first())
 
     override val root = vbox {
         paddingAll = 20
 
         form {
             fieldset("Edit Appointment") {
-                combobox(appointmentModel.itemProperty, ctrl.appointments) {
+                combobox(appointmentModel.itemProperty, ctrlAppointment.appointments) {
                     cellFormat {
                         text = "NAME: ${it.title} DATES: (${it.startDate}) - (${it.endDate}) ID: ${it.id}"
                     }
                 }
                 field("Appointment Name").textfield(appointmentModel.title)
-                field("Start Date").textfield(appointmentModel.start).promptText = "YYYY-MM-DD HH:MM:SS"
-                field("End Date").textfield(appointmentModel.end).promptText = "YYYY-MM-DD HH:MM:SS"
+                hbox {
+                    alignment = Pos.CENTER
+                    spacing = 20.0
+
+                    field("Start Date").datepicker(appointmentModel.startDate)
+                    field().textfield(appointmentModel.startTime).promptText = "HH:MM:SS"
+                }
+                hbox {
+                    alignment = Pos.CENTER
+                    spacing = 20.0
+
+                    field("End Date").datepicker(appointmentModel.endDate)
+                    field().textfield(appointmentModel.endTime).promptText = "HH:MM:SS"
+                }
+                field("Remind me in...").combobox(property = appointmentModel.reminder) {
+                    items = observableList(0, 30, 60, 120, 240, 3600)
+                    this.cellFormat {
+                        text = when (it.toInt()) {
+                            0 -> "Never"
+                            30 -> "Minutes"
+                            in 60..119 -> "1 Hour"
+                            in 120..3599 -> "${it.toInt() / 60} Hours"
+                            3600 -> "1 Day"
+                            else -> ""
+                        }
+                    }
+                }
             }
         }
         hbox {
@@ -32,7 +58,7 @@ class ChangeCancelAppointment : Fragment() {
                 find<Popup>(mapOf(Popup::message to result))
                     .openModal(resizable = false)
 
-                ctrl.updateComboBox()
+                ctrlAppointment.updateComboBox()
             }
             button("Go back").action {
                 close()
@@ -43,7 +69,7 @@ class ChangeCancelAppointment : Fragment() {
                 find<Popup>(mapOf(Popup::message to result))
                     .openModal(resizable = false)
 
-                ctrl.updateComboBox()
+                ctrlAppointment.updateComboBox()
             }
         }
     }
@@ -52,13 +78,18 @@ class ChangeCancelAppointment : Fragment() {
         return if (appointmentModel.item != null) {
             val appointment = Appointment(
                 appointmentModel.title.value,
-                appointmentModel.start.value,
-                appointmentModel.end.value,
-                appointmentModel.id.value
+                appointmentModel.startDate.value,
+                appointmentModel.startTime.value,
+                appointmentModel.endDate.value,
+                appointmentModel.endTime.value,
+                appointmentModel.id.value.toInt(),
+                appointmentModel.reminder.value.toInt()
             )
             val deleteStatement = connection.createStatement()
             return try {
-                deleteStatement.executeUpdate(SQL.removeAppointment(appointment.id))
+                deleteStatement.executeUpdate(
+                    SQL.removeAppointment(appointment.id)
+                )
                 "Removed ${appointment.title}"
             } catch (e: Exception) {
                 "Fatal error! Unable to remove appointment!"
@@ -72,33 +103,51 @@ class ChangeCancelAppointment : Fragment() {
         return if (appointmentModel.item != null) {
             val appointment = Appointment(
                 appointmentModel.title.value,
-                appointmentModel.start.value,
-                appointmentModel.end.value,
-                appointmentModel.id.value
+                appointmentModel.startDate.value,
+                appointmentModel.startTime.value,
+                appointmentModel.endDate.value,
+                appointmentModel.endTime.value,
+                appointmentModel.id.value.toInt(),
+                appointmentModel.reminder.value.toInt()
             )
             var success = true
             val titleStatement = connection.createStatement()
             val startStatement = connection.createStatement()
             val endStatement = connection.createStatement()
+            val remindStatement = connection.createStatement()
 
-
-            titleStatement.executeUpdate(SQL.changeTitle(appointment.title, appointment.id))
-            //TODO: A Sensible date-picker so we don't have to check for exceptions
+            titleStatement.executeUpdate(
+                SQL.changeTitle(appointment.title, appointment.id)
+            )
             try {
-                startStatement.executeUpdate(SQL.changeStart(appointment.startDate, appointment.id))
-            } catch (e: Exception) {
+                startStatement.executeUpdate(
+                    SQL.changeStart(
+                        "${appointment.startDate} ${appointment.startTime}",
+                        appointment.id
+                    )
+                )
+            } catch (e: MysqlDataTruncation) {
                 success = false
             }
             try {
-                endStatement.executeUpdate(SQL.changeEnd(appointment.endDate, appointment.id))
-            } catch (e: Exception) {
+                endStatement.executeUpdate(
+                    SQL.changeEnd(
+                        "${appointment.endDate} ${appointment.endTime}",
+                        appointment.id
+                    )
+                )
+            } catch (e: MysqlDataTruncation) {
                 success = false
             }
+
+            remindStatement.executeUpdate(
+                SQL.changeReminder(appointment.reminder, appointment.id)
+            )
 
             if (success) {
                 "Successfully updated all fields"
             } else {
-                "Failed to update at least one field"
+                "Failed to update at least one field: Wrong format for date-time entry"
             }
         } else {
             "Invalid ID used, please select an appointment from the list"

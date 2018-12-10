@@ -5,16 +5,18 @@ import javafx.geometry.Pos
 import tornadofx.*
 
 class ModifyAccount : View() {
-    private val email = SimpleStringProperty("")
-    private val phone = SimpleStringProperty("")
+    private val ctrlAccount: AccountController by inject()
+    private var accountModel = AccountModel(ctrlAccount.account)
+    // private val email = SimpleStringProperty(account.email)
+    // private val phone = SimpleStringProperty(account.phone)
 
     override val root = vbox {
         paddingAll = 20
 
         form {
             fieldset("Modify Account") {
-                field("New User Email").textfield(email)
-                field("Phone Number").textfield(phone)
+                field("New User Email").textfield(accountModel.email)
+                field("Phone Number").textfield(accountModel.phone)
             }
         }
         hbox {
@@ -39,7 +41,7 @@ class ModifyAccount : View() {
 
     private fun modify(): Pair<String, Boolean> {
         val emailStatement = connection.createStatement()
-        val emailResult = emailStatement.executeQuery(SQL.checkForExistingEmail(email.value))
+        val emailResult = emailStatement.executeQuery(SQL.checkForExistingEmail(accountModel.email.value))
         emailResult.next()
         val emailCount = emailResult.getInt(1)
 
@@ -48,28 +50,28 @@ class ModifyAccount : View() {
             return "This email is already registered" to false
         }
 
-        if (email.value != "") {
+        if (accountModel.email.value != "") {
             val successEmailStatement = connection.createStatement()
             successEmailStatement.executeUpdate(
                 SQL.changeEmail(
-                    account.username,
-                    email.value
+                    accountModel.username.value,
+                    accountModel.id.value.toInt()
                 )
             )
-            account.email = email.value
         }
 
         // The same phone number can apply to other users however
-        if (phone.value != "") {
+        if (accountModel.phone.value != "") {
             val successPhoneStatement = connection.createStatement()
             successPhoneStatement.executeUpdate(
                 SQL.changePhoneNumber(
-                    account.username,
-                    phone.value
+                    accountModel.phone.value,
+                    accountModel.id.value.toInt()
                 )
             )
-            account.phone = phone.value
         }
+
+        accountModel.commit()
 
         return "Value(s) successfully updated" to true
     }
